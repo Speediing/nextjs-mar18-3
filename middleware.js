@@ -1,11 +1,19 @@
-import { NextResponse } from 'next/server';
-import { get } from '@vercel/edge-config';
+import { NextResponse } from "next/server";
+import { get } from "@vercel/edge-config";
 
+export async function middleware(request) {
+  const open = await get("open");
+  const redirects = await get("redirects");
+  if (!open) {
+    return NextResponse.json("closed");
+  }
+  const url = request.nextUrl;
+  for (const redirect of redirects) {
+    if (redirect.source === url.pathname) {
+      url.pathname = redirect.destination;
+      return NextResponse.redirect(url);
+    }
+  }
 
-
-export async function middleware() {
-  const greeting = await get('greeting');
-  // NextResponse.json requires at least Next v13.1 or
-  // enabling experimental.allowMiddlewareResponseBody in next.config.js
-  return NextResponse.json(greeting);
+  return NextResponse.next();
 }
